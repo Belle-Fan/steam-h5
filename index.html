@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>赛博囤积症 · 玩家的闲置观察室</title>
+<style>
+  :root {
+    --paper: #F7F4EC;
+    --ink: #22332E;
+    --green: #2F5D50;
+    --green-soft: #6B8F82;
+    --gold: #C4A24A;
+    --line: rgba(47, 93, 80, 0.25);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: #1d2a26; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+  }
+  .serif { font-family: Georgia, "Times New Roman", "Songti SC", "SimSun", serif; }
+
+  /* ===== 舞台：手机比例，居中 ===== */
+  #stage {
+    position: relative;
+    width: 100vw; height: 100vh;
+    max-width: 520px;
+    margin: 0 auto;
+    overflow: hidden;
+    background: var(--paper);
+    box-shadow: 0 0 60px rgba(0,0,0,.45);
+  }
+  #track {
+    display: flex;
+    height: 100%;
+    transition: transform .45s cubic-bezier(.22,.9,.36,1);
+    will-change: transform;
+  }
+  .page {
+    flex: 0 0 100%;
+    height: 100%;
+    padding: 34px 26px 92px;
+    display: flex; flex-direction: column;
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+  }
+  .page::before {
+    content: "";
+    position: absolute; inset: 12px;
+    border: 1px solid var(--line);
+    pointer-events: none;
+  }
+  .kicker {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; letter-spacing: 1px; color: var(--green);
+    padding: 6px 2px 18px;
+    white-space: nowrap;
+  }
+  .kicker .club { font-style: italic; letter-spacing: 1px; }
+  .topic {
+    display: inline-block;
+    font-size: 12px; letter-spacing: 3px;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 5px 12px;
+    align-self: flex-start;
+    margin-bottom: 26px;
+  }
+  h1 {
+    font-size: clamp(34px, 9vw, 44px);
+    line-height: 1.28;
+    color: var(--green);
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  h1 em { font-style: normal; color: var(--gold); }
+  .sub {
+    margin-top: 22px;
+    font-size: 15px; line-height: 2;
+    color: var(--ink);
+  }
+  .sub b { color: var(--green); font-weight: 700; }
+  .spacer { flex: 1; }
+
+  /* 主视觉：CSS 绘制游戏库 + 手柄 */
+  .hero {
+    margin: 26px auto 8px;
+    width: min(78%, 300px);
+    aspect-ratio: 4 / 3;
+    border: 1px solid var(--line);
+    background:
+      linear-gradient(135deg, rgba(47,93,80,.06), rgba(196,162,74,.08)),
+      var(--paper);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 7px; padding: 10px;
+    position: relative;
+  }
+  .cell {
+    border: 1px dashed var(--green-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: var(--green-soft); letter-spacing: 1px;
+    background: rgba(255,255,255,.35);
+  }
+  .cell.hot { border-style: solid; border-color: var(--gold); color: var(--gold); background: rgba(196,162,74,.10); }
+  .pad {
+    position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%);
+    width: 76px; height: 42px;
+    background: var(--green);
+    border-radius: 22px 22px 26px 26px;
+    box-shadow: 0 6px 14px rgba(34,51,46,.35);
+  }
+  .pad::before, .pad::after {
+    content: ""; position: absolute; top: 13px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--paper);
+  }
+  .pad::before { left: 13px; }
+  .pad::after { right: 13px; opacity: .55; width: 7px; height: 7px; top: 15px; }
+  .hero-cap { text-align: center; font-size: 10px; letter-spacing: 2px; color: var(--green-soft); margin-top: 26px; }
+
+  .tags { margin-top: 18px; font-size: 13px; color: var(--green); letter-spacing: 1px; }
+  .tags span { margin-right: 12px; }
+
+  .next-hint {
+    margin-top: 14px;
+    font-size: 13px; letter-spacing: 2px; color: var(--gold);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .next-hint .arr { animation: nudge 1.4s ease-in-out infinite; display: inline-block; }
+  @keyframes nudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(7px); } }
+
+  /* 内页通用 */
+  .chapter { font-size: 12px; letter-spacing: 4px; color: var(--gold); margin-bottom: 14px; }
+  h2 { font-size: clamp(26px, 7vw, 32px); color: var(--green); line-height: 1.5; letter-spacing: 1px; }
+  .quote {
+    margin-top: 26px;
+    border-left: 3px solid var(--gold);
+    padding: 4px 0 4px 16px;
+    font-size: 16px; line-height: 2;
+    color: var(--ink);
+  }
+  .quote .en { display: block; font-size: 11px; letter-spacing: 2px; color: var(--green-soft); margin-top: 8px; font-style: italic; }
+  .body-text { margin-top: 22px; font-size: 14.5px; line-height: 2.1; color: var(--ink); }
+  .body-text b { color: var(--green); }
+
+  /* 数据共鸣块 */
+  .stat-card {
+    margin-top: 24px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.5);
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .stat-num { font-size: 44px; color: var(--gold); font-weight: 700; line-height: 1.1; }
+  .stat-label { font-size: 12.5px; color: var(--green); letter-spacing: 1px; margin-top: 8px; line-height: 1.8; }
+  .stat-src { font-size: 10px; color: var(--green-soft); margin-top: 8px; letter-spacing: .5px; }
+
+  .zero-list { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+  .zero-row {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px dashed var(--line);
+    padding-bottom: 8px; font-size: 14px;
+  }
+  .zero-row .hrs { color: var(--gold); font-weight: 700; letter-spacing: 1px; }
+  .zero-cap { font-size: 10px; color: var(--green-soft); margin-top: 8px; letter-spacing: 1px; }
+
+  /* 尾页按钮 */
+  .actions { display: flex; gap: 14px; margin-top: 26px; }
+  .btn {
+    flex: 1;
+    padding: 13px 0;
+    text-align: center;
+    font-size: 14px; letter-spacing: 2px;
+    border: 1px solid var(--green);
+    color: var(--green);
+    background: transparent;
+    cursor: pointer;
+    transition: transform .12s ease, background .2s ease, color .2s ease;
+    user-select: none;
+  }
+  .btn.solid { background: var(--green); color: var(--paper); }
+  .btn:active { transform: scale(.96); }
+  .btn.done { background: var(--gold); border-color: var(--gold); color: #fff; }
+
+  .foot {
+    position: absolute; left: 0; right: 0; bottom: 58px;
+    text-align: center; font-size: 10px; letter-spacing: 3px; color: var(--green-soft);
+  }
+
+  /* 导航 */
+  #dots {
+    position: absolute; bottom: 24px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 10px; z-index: 10;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--line);
+    border: 1px solid var(--green);
+    cursor: pointer;
+    transition: all .25s ease;
+  }
+  .dot.on { background: var(--green); transform: scale(1.25); }
+  .nav-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--green);
+    background: rgba(247,244,236,.85);
+    color: var(--green);
+    font-size: 18px; line-height: 38px; text-align: center;
+    cursor: pointer; z-index: 10;
+    user-select: none;
+    transition: opacity .25s ease;
+  }
+  .nav-arrow:hover { background: var(--green); color: var(--paper); }
+  #prev { left: 10px; } #next { right: 10px; }
+  .nav-arrow.hide { opacity: 0; pointer-events: none; }
+
+  /* toast */
+  #toast {
+    position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%) translateY(10px);
+    background: rgba(34,51,46,.92); color: var(--paper);
+    font-size: 13px; letter-spacing: 1px;
+    padding: 10px 20px; border-radius: 20px;
+    opacity: 0; pointer-events: none;
+    transition: all .3s ease;
+    z-index: 20; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 页内元素入场动画 */
+  .page .anim { opacity: 0; transform: translateY(18px); transition: all .6s ease; }
+  .page.on .anim { opacity: 1; transform: translateY(0); }
+  .page.on .anim.d1 { transition-delay: .12s; }
+  .page.on .anim.d2 { transition-delay: .24s; }
+  .page.on .anim.d3 { transition-delay: .36s; }
+  .page.on .anim.d4 { transition-delay: .48s; }
+
+  @media (max-height: 640px) {
+    h1 { font-size: 30px; }
+    .hero { width: 60%; }
+    .body-text { line-height: 1.9; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="track">
+
+    <!-- P1 封面 -->
+    <section class="page on">
+      <div class="kicker"><span>玩家的闲置观察室　VOL.01 / 04</span><span class="club serif">THE UNPLAYED CLUB</span></div>
+      <span class="topic anim">■ 本期话题 · 游戏库落灰实录</span>
+      <h1 class="serif anim d1">你最落灰的<br>一款 Steam<br>游戏<em>？</em></h1>
+      <div class="hero anim d2">
+        <div class="cell">0h</div><div class="cell">0h</div><div class="cell hot">已读不回</div><div class="cell">0h</div>
+        <div class="cell hot">等长假</div><div class="cell">0h</div><div class="cell">0h</div><div class="cell">0.5h</div>
+        <div class="cell">0h</div><div class="cell hot">云通关</div><div class="cell">0h</div><div class="cell">0h</div>
+        <div class="pad"></div>
+      </div>
+      <div class="hero-cap anim d2">IMAGE · 游戏库 + 手柄示意（原创绘制）</div>
+      <div class="sub anim d3">购买时：<b>这把一定玩。</b><br>入库后：<b>下次一定。</b></div>
+      <div class="spacer"></div>
+      <div class="tags anim d3"><span>#赛博囤积症</span><span>#Steam玩家日常</span><span>#买游戏比玩游戏多</span></div>
+      <div class="next-hint anim d4">往后翻，看看是不是你 <span class="arr">→</span></div>
+    </section>
+
+    <!-- P2 入库即吃灰 -->
+    <section class="page">
+      <div class="kicker"><span>玩家的闲置观察室　02 / 04</span><span class="club serif">THE UNPLAYED CLUB</span></div>
+      <div class="chapter anim">01 · 入库即吃灰</div>
+      <h2 class="serif anim d1">当初有多想买，<br>现在就有多安静。</h2>
+      <div class="body-text anim d2">
+        夏促那晚，你盯着 <b>-75%</b> 的红色标签，手指比大脑先做了决定。原价 298，现价 74，你甚至觉得是自己赚了。付款音效响起的一瞬间，多巴胺准时到账——<b>"我总有一天会玩"</b>的可能性，被你以 74 元的价格买断了。
+      </div>
+      <div class="stat-card anim d3">
+        <div class="stat-num serif">51.5%</div>
+        <div class="stat-label">中位玩家的 Steam 库里，<br>一半以上的游戏从未被打开</div>
+        <div class="stat-src">数据：GameDiscoverCo × GamingAnalytics 公开资料实测，2024</div>
+      </div>
+      <div class="quote serif anim d4">
+        "不是不玩，是在等一个长假。"
+        <span class="en">WAITING FOR A VACATION THAT NEVER COMES</span>
+      </div>
+      <div class="foot">KEEP THE CONVERSATION GOING</div>
+    </section>
+
+    <!-- P3 0小时俱乐部 -->
+    <section class="page">
+      <div class="kicker"><span>玩家的闲置观察室　03 / 04</span><span class="club serif">THE UNPLAYED CLUB</span></div>
+      <div class="chapter anim">02 · 0小时俱乐部</div>
+      <h2 class="serif anim d1">你囤的不是游戏，<br>是"我还有时间"的<br><em style="font-style:normal;color:var(--gold)">安慰剂</em>。</h2>
+      <div class="body-text anim d2">
+        Valve 官方年度统计显示：2024 年玩家当年游玩游戏数，<b>中位数只有 4 款</b>。我们买的，永远是"理想中的自己"：那个有闲暇、有精力、有心情好好玩游戏的人。下面这份清单，像不像你的库？（示意）
+      </div>
+      <div class="zero-list anim d3">
+        <div class="zero-row"><span>《荒野大镖客：救赎2》</span><span class="hrs">0 小时 · 买了 3 年</span></div>
+        <div class="zero-row"><span>《赛博朋克 2077》</span><span class="hrs">0.5 小时 · 创建完角色</span></div>
+        <div class="zero-row"><span>《黑神话：悟空》</span><span class="hrs">0 小时 · 说好在等</span></div>
+        <div class="zero-row"><span>《双人成行》</span><span class="hrs">0 小时 · 缺一个搭子</span></div>
+      </div>
+      <div class="zero-cap anim d3">* 清单为情景示意，非真实游玩数据</div>
+      <div class="quote serif anim d4">
+        "看评测两小时，下载半小时，打开五分钟。"
+        <span class="en">BOUGHT = PLAYED (ALLEGEDLY)</span>
+      </div>
+      <div class="foot">数据：Valve《Steam Replay 2024》年度回顾</div>
+    </section>
+
+    <!-- P4 尾页 -->
+    <section class="page">
+      <div class="kicker"><span>玩家的闲置观察室　04 / 04</span><span class="club serif">THE UNPLAYED CLUB</span></div>
+      <div class="chapter anim">ONE LAST THING</div>
+      <h2 class="serif anim d1" style="line-height:1.7">游戏库是满的，<br>属于自己的时间，<br><em style="font-style:normal;color:var(--gold)">慢慢再找回来。</em></h2>
+      <div class="body-text anim d2">
+        偶尔聊游戏，也聊玩游戏的我们。<br>下一次，不如从<b>点开它</b>开始。
+      </div>
+      <div class="actions anim d3">
+        <div class="btn" id="btnFollow">＋ 关注，继续聊</div>
+        <div class="btn solid" id="btnStar">☆ 收藏，下次看</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="tags anim d4"><span>#赛博囤积症</span><span>#Steam玩家日常</span><span>#买游戏比玩游戏多</span></div>
+      <div class="next-hint anim d4" style="color:var(--green)">评论区晒出你的 0 小时俱乐部 →</div>
+      <div class="foot">KEEP THE CONVERSATION GOING</div>
+    </section>
+  </div>
+
+  <div class="nav-arrow hide" id="prev">‹</div>
+  <div class="nav-arrow" id="next">›</div>
+  <div id="dots"></div>
+  <div id="toast"></div>
+</div>
+
+<script>
+(function () {
+  var track = document.getElementById('track');
+  var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+  var dotsBox = document.getElementById('dots');
+  var prevBtn = document.getElementById('prev');
+  var nextBtn = document.getElementById('next');
+  var toast = document.getElementById('toast');
+  var cur = 0, N = pages.length, toastTimer = null;
+
+  pages.forEach(function (_, i) {
+    var d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.addEventListener('click', function () { go(i); });
+    dotsBox.appendChild(d);
+  });
+  var dots = Array.prototype.slice.call(dotsBox.children);
+
+  function go(i) {
+    if (i < 0 || i >= N || i === cur) return;
+    cur = i;
+    track.style.transform = 'translateX(-' + i * 100 + '%)';
+    pages.forEach(function (p, k) { p.classList.toggle('on', k === i); });
+    dots.forEach(function (d, k) { d.classList.toggle('on', k === i); });
+    prevBtn.classList.toggle('hide', i === 0);
+    nextBtn.classList.toggle('hide', i === N - 1);
+  }
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1600);
+  }
+
+  prevBtn.addEventListener('click', function () { go(cur - 1); });
+  nextBtn.addEventListener('click', function () { go(cur + 1); });
+
+  document.getElementById('btnFollow').addEventListener('click', function () {
+    this.classList.add('done'); this.textContent = '✓ 已关注';
+    showToast('关注成功 · 下次促销见（演示按钮）');
+  });
+  document.getElementById('btnStar').addEventListener('click', function () {
+    this.classList.add('done'); this.textContent = '★ 已收藏';
+    showToast('收藏成功 · 0小时俱乐部+1（演示按钮）');
+  });
+
+  /* 触摸滑动 */
+  var sx = 0, sy = 0, swiping = false;
+  track.addEventListener('touchstart', function (e) {
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; swiping = true;
+  }, { passive: true });
+  track.addEventListener('touchend', function (e) {
+    if (!swiping) return; swiping = false;
+    var dx = e.changedTouches[0].clientX - sx;
+    var dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) { dx < 0 ? go(cur + 1) : go(cur - 1); }
+  }, { passive: true });
+
+  /* 鼠标拖拽 */
+  var down = false, mx = 0;
+  track.addEventListener('mousedown', function (e) { down = true; mx = e.clientX; });
+  window.addEventListener('mouseup', function (e) {
+    if (!down) return; down = false;
+    var dx = e.clientX - mx;
+    if (Math.abs(dx) > 60) { dx < 0 ? go(cur + 1) : go(cur - 1); }
+  });
+
+  /* 键盘 */
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') go(cur + 1);
+    if (e.key === 'ArrowLeft') go(cur - 1);
+  });
+})();
+</script>
+</body>
+</html>
